@@ -71,7 +71,7 @@ fun main() {
 
 ---
 
-## 🔍 `Sequence`란?
+### 🔍 `Sequence`란?
 
 `Sequence`는 Kotlin에서 **지연 평가(lazy evaluation)** 를 지원하는 컬렉션 처리 방식
 
@@ -79,9 +79,9 @@ fun main() {
 
 ---
 
-## ✅ 주요 특징
+### ✅ 주요 특징
 
-### 1. **Lazy Evaluation (지연 연산)**
+#### 1. **Lazy Evaluation (지연 연산)**
 
 - `filter`, `map` 같은 중간 연산은 **실제 연산을 하지 않음**.
 - 최종 연산(`toList()`, `first()`, `any()` 등)이 호출될 때만 연산이 시작됨.
@@ -99,14 +99,14 @@ val result = seq.toList() // 이때 출력 시작
 
 ---
 
-### 2. **중간 연산 vs 최종 연산**
+#### 2. **중간 연산 vs 최종 연산**
 
 - **중간 연산**: `map`, `filter`, `take`, `drop`, `flatMap` 등 → 결과를 바로 계산하지 않음
 - **최종 연산**: `toList`, `count`, `first`, `any`, `none`, `find` 등 → 이때 연산 수행
 
 ---
 
-### 3. **효율적인 파이프라인 처리**
+#### 3. **효율적인 파이프라인 처리**
 
 - 각 요소가 `filter → map → 최종연산` 순서로 **하나씩** 흐름.
 - 불필요한 연산 생략 가능 (→ 성능 향상).
@@ -121,7 +121,7 @@ val result = seq.toList() // 이때 출력 시작
 
 ---
 
-### 4. **컬렉션과의 차이점**
+#### 4. **컬렉션과의 차이점**
 
 | 특성 | 컬렉션 (List 등) | Sequence |
 | --- | --- | --- |
@@ -131,13 +131,13 @@ val result = seq.toList() // 이때 출력 시작
 
 ---
 
-### 5. **toList(), toSet() 등을 쓰면 lazy 종료됨**
+#### 5. **toList(), toSet() 등을 쓰면 lazy 종료됨**
 
 - `Sequence`는 최종 연산을 만나야 평가가 끝나고, 그때 **List나 Set으로 변환**되면 더는 lazy가 아님.
 
 ---
 
-## ✅ 언제 쓰면 좋을까?
+### ✅ 언제 쓰면 좋을까?
 
 - 대량의 데이터를 처리할 때
 - 필터/맵 체인이 길어서 중간 결과가 많을 때
@@ -146,7 +146,7 @@ val result = seq.toList() // 이때 출력 시작
 
 ---
 
-## ⚠️ 주의점
+### ⚠️ 주의점
 
 - 너무 많은 중간 연산을 사용할 경우, **지연 연산이 쌓여 오히려 성능이 나빠질 수 있음**
 - `Sequence`는 내부적으로 **Iterator 기반**이라 **랜덤 접근이 불가** (ex. `get(index)` 안 됨)
@@ -202,17 +202,17 @@ suspend fun main() {
 // After
 ```
 
-> `delay()`의 JVM 버전에서는 과거(혹은 단순화된 예제/교육용 구현)에서 `Executors.newSingleThreadScheduledExecutor()`를 내부에서 직접 사용하는 방식이 사용된 적 있습니다.
+> `delay()`의 JVM 버전에서는 과거(혹은 단순화된 예제/교육용 구현)에서 `Executors.newSingleThreadScheduledExecutor()`를 내부에서 직접 사용하는 방식이 사용된 적 있.
 > 
 > 
-> 하지만 현재의 **표준 kotlinx.coroutines 구현**에서는 `DefaultExecutor`라는 **전역 스레드 기반의 `EventLoop`**를 사용합니다.
+> 하지만 현재의 **표준 kotlinx.coroutines 구현**에서는 `DefaultExecutor`라는 **전역 스레드 기반의 `EventLoop`**를 사용.
 > 
 
 ---
 
-## 🔍 왜 책에서는 `Executors.newSingleThreadScheduledExecutor()`를 쓴다고 했을까?
+### 🔍 왜 책에서는 `Executors.newSingleThreadScheduledExecutor()`를 쓴다고 했을까?
 
-### 가능한 이유:
+#### 가능한 이유:
 
 1. **책이 `delay()`의 기본 원리를 설명하기 위해 단순화한 예시**로 든 것일 수 있음.
     
@@ -230,7 +230,7 @@ suspend fun main() {
 
 ---
 
-## 🧠 현재 공식 구현 확인 (kotlinx.coroutines 1.6.x~1.8 기준)
+### 🧠 현재 공식 구현 확인 (kotlinx.coroutines 1.6.x~1.8 기준)
 
 `delay()`는 다음 흐름으로 실행됨:
 
@@ -250,7 +250,7 @@ suspend fun delay(timeMillis: Long): Unit {
 
 ---
 
-## 🔬 `DefaultExecutor`는 어떤 식으로 동작할까?
+### 🔬 `DefaultExecutor`는 어떤 식으로 동작할까?
 
 ```kotlin
 object DefaultExecutor : EventLoopImplBase(), Runnable {
@@ -272,7 +272,7 @@ object DefaultExecutor : EventLoopImplBase(), Runnable {
 
 ---
 
-## ✅ 결론 요약
+### ✅ 결론 요약
 
 | 항목 | 내용 |
 | --- | --- |
@@ -281,9 +281,9 @@ object DefaultExecutor : EventLoopImplBase(), Runnable {
 | 왜 다른가요? | 개념적으로 동일한 구조이기 때문에, 설명을 단순화한 것 |
 | 지금도 Executors 써도 되나요? | ✅ 직접 디스패처나 커스텀 딜레이 구현 시 사용 가능함 |
 
-## ⏰ 내부 메커니즘 (실제 예시 기반)
+### ⏰ 내부 메커니즘 (실제 예시 기반)
 
-### `DefaultExecutor`는 다음과 같은 내부 루프를 가짐:
+#### `DefaultExecutor`는 다음과 같은 내부 루프를 가짐:
 
 ```kotlin
 
