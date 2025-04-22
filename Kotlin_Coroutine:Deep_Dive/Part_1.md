@@ -205,7 +205,7 @@ suspend fun main() {
 > `delay()`의 JVM 버전에서는 과거(혹은 단순화된 예제/교육용 구현)에서 `Executors.newSingleThreadScheduledExecutor()`를 내부에서 직접 사용하는 방식이 사용된 적 있음.
 > 
 > 
-> 하지만 현재의 **표준 kotlinx.coroutines 구현**에서는 `DefaultExecutor`라는 **전역 스레드 기반의 `EventLoop`**를 사용.
+> 하지만 현재의 **표준 kotlinx.coroutines 구현**에서는 `DefaultExecutor`라는 **전역 스레드 기반의** `EventLoop`를 사용.
 > 
 
 ---
