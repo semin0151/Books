@@ -358,7 +358,7 @@ suspend fun someTask() = suspendCancellableCoroutine { cont ->
 
 #### SupervisorScope
 
-- 코루틴 빌더를 supervisorScope로 래핑
+- 코루틴 빌더를 `supervisorScope로` 래핑
 - 중단 함수이며, 중단 함수 본체를 래핑하는 역할
 - 일반적으로 서로 무관한 다수 작업을 스코프 내에서 실행
 
@@ -389,7 +389,7 @@ suspend fun main(): Unit = coroutineScope {
 
 ### 코루틴 예외 핸들러
 
-예외 전파를 중단시키지는 않지만 예외가 발생했을 때 해야할 것들(기본적으로 예외 스택 트레이스를 출력)을 정의하는데 CoroutineExceptionHandler를 사용하면 편리하다.
+예외 전파를 중단시키지는 않지만 예외가 발생했을 때 해야할 것들(기본적으로 예외 스택 트레이스를 출력)을 정의하는데 `CoroutineExceptionHandler`를 사용하면 편리하다.
 
 ```kotlin
 fun main(): Unit = runBlocking {
