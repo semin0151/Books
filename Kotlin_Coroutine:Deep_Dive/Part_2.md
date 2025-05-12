@@ -207,6 +207,24 @@ suspend fun main() = coroutineScope {
 
 `Job`은 코루틴이 상속하지 않는 유일한 코루틴 컨텍스트이며, 이는 코루틴에서 아주 중요한 법칙이다. 모든 코루틴은 자신만의 `Job`을 생성하며 인자 또는 부모 코루틴으로부터 온 잡은 새로운 잡의 부모로 사용된다. 부모 잡은 자식 잡 모두를 참조할 수 있으며, 자식 또한 부모를 참조할 수 있다. 잡을 참조할 수 있는 부모-자식 관계가 있기 때문에 코루틴 스코프 내에서 취소와 예외 처리 구현이 가능하다.
 
+### Job 클래스 계층 구조
+
+```kotlin
+interface Job : CoroutineContext.Element
+interface CompletableJob : Job
+
+// 실제 구현 클래스
+open class JobSupport(...) : CompletableJob, CoroutineScope
+class JobImpl(...) : JobSupport
+class SupervisorJobImpl(...) : JobSupport
+
+```
+
+- `Job`: 코루틴의 생명주기 관리 인터페이스 (취소, 완료 등)
+- `CompletableJob`: `complete()` 같은 수동 완료 기능 추가
+- `JobSupport`: 상태(state), 핸들러(NodeList), 부모-자식 관계 모두 구현
+- `JobImpl`, `SupervisorJobImpl`: 실제 코루틴에서 사용되는 구현체
+
 ### 자식들 기다리기
 
 잡의 첫 번째 중요한 이점은 코루틴이 완료될 때까지 기다리는 데 사용될 수 있다는 점이다. join 메서드를 사용하면 지정한 `Job`이 **Completed**나 **Cancelled**와 같은 마지막 상태에 도달할 때까지 기다릴 수 있다.
@@ -237,6 +255,37 @@ fun main(): Unit = runBlocking{
 // All tests are done
 ```
 
+### 부모-자식 관계 구조화
+
+- `Job(child)`를 생성 시, 부모 Job에 자식으로 **등록**됨
+- 구조화된 동시성 기반: 부모가 취소되면 자식도 자동 취소됨
+
+```kotlin
+val parent = Job()
+val child = Job(parent)
+```
+
+- `attachChild()` → `ChildHandleNode(child)`를 부모에 등록
+- 자식 Job은 `parentHandle`을 통해 부모 참조
+
+---
+
+### 부모-자식 연결 구조 = LinkedList
+
+- `JobSupport.state`가 `Incomplete`일 때 `NodeList`라는 **lock-free linked list** 사용
+- 자식은 `ChildHandleNode` 형태로 **부모 Job의 NodeList에 추가됨**
+- `NodeList`에는 자식뿐만 아니라 일반 핸들러도 함께 들어감
+
+```
+JobSupport(state=Incomplete)
+ └── NodeList
+      ├── ChildHandleNode(child1: Job)
+      ├── ChildHandleNode(child2: Job)
+      └── CompletionHandlerNode(..
+```
+
+- 논리적으로는 트리(Tree), 자료구조적으로는 **Linked List + 참조 기반 구조**
+
 ### 잡 팩토리 함수
 
 `Job()`은 팩토리 함수의 좋은 예이다. `Job`은 인터페이스이므로 생성자를 가질수 없다. `Job`은 생성자처럼 보이는 간단한 함수로, 가짜 생성자이다. 
@@ -254,6 +303,33 @@ interface CompletableJob {
 
 - `complete(): Boolean` - 잡을 완료하는 데 사용. 모든 자식 코루틴은 작업이 완료될 때까지 실행 상태를 유지하지만, `complete()`를 호출한 잡에서 새로운 코루틴이 시작될 수는 없다. 이미 완료되었으면 true, 아니면 false를 반환한다.
 - `completeExceptionally(exception: Throwable): Boolean` - 인자로 받은 예외로 잡을 완료시킨다. 모든 자식 코루틴은 주어진 예외를 래핑한 `CancellationException`으로 즉시 취소된다. 이미 완료되었으면 true, 아니면 false를 반환한다.
+
+### Job vs SupervisorJob 내부 구현 차이 (핵심: `childCancelled`)
+
+`JobSupport` 내부의 다음 함수가 **핵심 차이**를 만듦:
+
+```kotlin
+// Job
+override fun childCancelled(cause: Throwable): Boolean {
+    if (cause is CancellationException) return true
+    return cancelImpl(cause) && handlesException
+}
+
+// SupervisorJob
+override fun childCancelled(cause: Throwable): Boolean {
+    return false
+}
+```
+
+- `Job`은 자식이 예외로 종료되면 `parent.cancel()` 실행됨 (전파됨)
+- `SupervisorJob`은 자식이 예외로 종료돼도 무시하고 **다른 자식에 영향 없음**
+
+즉:
+
+| 항목 | Job | SupervisorJob |
+| --- | --- | --- |
+| 자식 취소 전파 | 부모까지 전파 (`cancelImpl`) | 부모는 영향 없음 (`no-op`) |
+| `childCancelled` | 부모 cancel 트리거 | 아무 동작 없음 |
 
 ## 9장 취소
 
@@ -352,13 +428,13 @@ suspend fun someTask() = suspendCancellableCoroutine { cont ->
 
 ### 코루틴 종료 멈추기
 
-#### SupervisorJob
+**SupervisorJob**
 
 - 자식에서 발생한 모든 예외를 무시할 수 있다.
 
-#### SupervisorScope
+**SupervisorScope**
 
-- 코루틴 빌더를 `supervisorScope로` 래핑
+- 코루틴 빌더를 `supervisorScope`로 래핑
 - 중단 함수이며, 중단 함수 본체를 래핑하는 역할
 - 일반적으로 서로 무관한 다수 작업을 스코프 내에서 실행
 
