@@ -662,9 +662,9 @@ internal class ContextScope(
 
 ### 안드로이드에서의 스코프
 
-- viewModelScope, lifecycleScope
-    - 뷰모델 또는 라이프사이클이 종료되었을 때 Job을 취소 시킴
-    - Dispatchers.Main과 SupervisorJob을 사용
+- `viewModelScope`, `lifecycleScope`
+    - 뷰모델 또는 라이프사이클이 종료되었을 때 `Job을` 취소 시킴
+    - `Dispatchers.Main`과 `SupervisorJob`을 사용
 
 ## 14장 공유 상태로 인한 문제
 
@@ -716,7 +716,7 @@ suspend fun massiveRun(action: suspend () -> Unit) =
 
 **뮤텍스**
 
-- kotlinx.coroutines에서 제공하는 interface
+- `kotlinx.coroutines`에서 제공하는 `interface`
 - OS에서의 뮤텍스와 동일한 개념
 - 스레드 대신 코루틴을 블락함
 - 뮤텍스 내부에서 뮤텍스를 사용할 경우 교착 상태에 빠지게 됨
@@ -724,8 +724,10 @@ suspend fun massiveRun(action: suspend () -> Unit) =
 
 **세마포어**
 
-- kotlinx.coroutines에서 제공하는 interface
+- `kotlinx.coroutines`에서 제공하는 `interface`
 - OS에서의 세마포어와 동일한 개념
 - 동시 요청의 처리 수를 제한할 때 활용
 
 ## 15장 코틀린 코루틴 테스트하기
+
+
