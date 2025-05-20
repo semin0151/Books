@@ -493,10 +493,239 @@ fun main(): Unit = runBlocking {
 
 ## 11장 코루틴 스코프 함수
 
+### coroutineScope
+
+`coroutineScope`는 스코프를 시작하는 중단함수이며, 인자로 들어온 함수가 생성한 값을 반환한다.
+
+```kotlin
+fun main() = runBlocking {
+	val a = coroutineScope {
+		delay(1000)
+		10
+	}
+	println("a is calculated")
+	val b = coroutineScope = {
+		delay(1000)
+		20
+	}
+	println(a)
+	println(b)
+}
+
+// (1초 후)
+// a is calculated
+// (1초 후)
+// 10
+// 20
+```
+
+`coroutineScope`는 아래와 같은 특성을 가진다. 중단 함수에서 병렬로 작업을 수행할 경우 사용하는 것이 좋다.
+
+- 부모로부터 컨텍스트를 상속받는다.
+- 자신의 작업을 끝내기 전까지 모든 자식을 기다린다.
+- 부모가 취소되면 자식들 모두를 취소한다.
+
+### 코루틴 스코프 함수
+
+| 코루틴 빌더
+(runBlocking 제외) | 코루틴 스코프 함수 |
+| --- | --- |
+| launch, async, produce | coroutineScope, 
+supervisorScope,
+withContext, withTimeout |
+| coroutineScope의 확장 함수 | 중단 함수 |
+| coroutineScope 리시버의 코루틴 컨텍스트를 사용 | 중단 함수의 컨티뉴에이션 객체가 가진 코루틴 컨텍스트를 사용 |
+| 예외는 Job을 통해 부모로 전파됨 | 일반 함수와 같은 방식으로 예외를 던짐 |
+| 비동기인 코루틴을 시작함 | 코루틴 빌더가 호출된 곳에서 코루틴을 시작함 |
+
+### withContext
+
+`withContext` 함수는 `coroutineScope`와 비슷하지만 스코프의 컨텍스트를 변경할 수 있다는 점에서 다르다. `withContext`의 인자로 컨텍스트를 제공하면 부모 스코프의 컨텍스트를 대체한다. `withContext(EmptyCoroutineContext)`와 `coroutineScope()`의 동작은 거의 일치한다.
+
+### supervisorScope
+
+`coroutineScope`에서 컨텍스트의 `Job`을 `SupervisorJob`으로 오버라이딩 한 것. 자식 코루틴이 예외를 던져도 취소되지 않는다.
+
+### withTimeout
+
+타임아웃 값을 인자로 넘겨주면 람다식을 취소하고 `TimeoutCancellationException`을 던진다.
+
 ## 12장 디스패처
+
+디스패처는 코루틴이 실행되어야 할 스레드(또는 스레드 풀)를 결정한다.
+
+### 기본 디스패처
+
+`Dispatchers.Default`
+
+- CPU 집약적인 연산을 수행하도록 설계
+- 컴퓨터 CPU와 동일한 개수의 스레드풀을 가짐
+- 프로세스가 가지고 있는 코어 수의 스레드
+
+### 메인 디스패처
+
+`Dispatchers.Main`
+
+- 안드로이드에서의 UI스레드
+- 유일한 스레드
+
+`Dispatchers.Main.immediate`
+
+- 코루틴을 배정하는 것 자체가 큐에 들어갔다 나오기 때문에 약간의 비용이 발생하게 된다.
+- 해당 디스패처는 현재 스레드가 메인 스레드일 경우 즉시 실행된다.
+
+### I/O 디스패처
+
+`Dispatchers.IO`
+
+- I/O 연산으로 스레드 블로킹할 때 사용하도록 설계
+- 64개 혹은 더 많은 코어가 있다면 해당 코어 수의 스레드
+
+### 커스텀 스레드 풀
+
+`limitedParallelism` 함수를 사용하면 독립적인 스레드 풀을 가진 새로운 디스패처를 만든다. 인자로 스레드 개수를 지정할 수 있다.
+
+```kotlin
+suspend fun main(): Unit = coroutineScope {
+	launch {
+		printCoroutinesTime(Dispatchers.IO)
+		// Dispatchers.IO took: 2074
+	}
+	
+	launch {
+		val dispatcher = Dispatchers.IO
+			.limitedParallelism(100)
+		printCoroutinesTime(dispatcher)
+		// LimitedDispatcher@XXX took: 1082
+	}
+}
+```
+
+### 싱글스레드로 제한된 디스패처
+
+커스텀 스레드 풀을 제한하여 싱글 스레드에서 동작되는 디스패처를 만들 수 있다.
+
+```kotlin
+var i = 0
+
+suspend fun main(): Unit = coroutineScope {
+	repeat(10_000) {
+		launch(Dispatchers.IO) {
+			i++
+		}
+	}
+	delay(1000)
+	println(i) // ~9930
+}
+
+var i = 0
+
+suspend fun main(): Unit = coroutineScope {
+	val dispatcher = Dispatchers.Default
+		.limitedParallelism(1)
+	repeat(10_000) {
+		launch(dispatcher) {
+			i++
+		}
+	}
+	delay(1000)
+	println(i) // 10000
+}
+```
+
+### 컨티뉴에이션 인터셉터
+
+디스패칭을 관할하는 `CoroutineContext.Element`. 중단되었을 때 `interceptContinuation()` 메서드로 컨티뉴에이션 객체를 수정하고 포장한다. `releaseInterceptedContinuation()` 메서드는 컨티뉴에이션이 종료되었을 때 호출된다.
 
 ## 13장 코루틴 스코프 만들기
 
+### CoroutineScope 팩토리 함수
+
+코루틴 스코프 객체를 만드는 가장 쉬운 방법은 `CoroutineScope` 팩토리 함수를 사용하는 것이다. 이 함수는 컨텍스트를 넘겨받아 스코프를 만든다.(잡이 컨텍스트에 없으면 구조화된 동시성을 위해 Job을 추가할 수도 있다.)
+
+```kotlin
+public fun CoroutineScope(
+	context: CoroutineContext
+): CoroutineScope = 
+	ContextScope(
+		if (context[Job] != null) context
+		else context + Job()
+	)
+
+internal class ContextScope(
+	context: CoroutineContext
+): CoroutineScope {
+	override val coroutineContext: CoroutineContext = context
+	override fun toString(): String =
+		"CoroutineScope(coroutineContext=$coroutineContext)"
+```
+
+### 안드로이드에서의 스코프
+
+- viewModelScope, lifecycleScope
+    - 뷰모델 또는 라이프사이클이 종료되었을 때 Job을 취소 시킴
+    - Dispatchers.Main과 SupervisorJob을 사용
+
 ## 14장 공유 상태로 인한 문제
+
+```kotlin
+var counter = 0
+
+fun main() = runBlocking {
+	massiveRun {
+		counter++
+	}
+	println(counter) // ~567231
+}
+
+suspend fun massiveRun(action: suspend () -> Unit) = 
+	withContext(Dispatchers.Default) {
+		repeat(1000) {
+			launch {
+				repeat(1000) { action() }
+			}
+		}
+	}
+```
+
+위 코드는 동기화가 보장되지 않아 예상되는 값인 1,000,000보다 더 작은 값이 나온다.
+
+### 동기화 방법
+
+**synchronized**
+
+- 전통적인 방법
+- suspend 함수를 사용할 수 없음
+- 스레드를 블락 함
+
+**Atomic**
+
+- 전체 연산에서 원자성이 보장되지 않음
+- 제공되는 함수를 활용
+- 객체의 구조가 복잡한 경우에는 사용 불가(primitive 변수 또는 하나의 레퍼런스만 사용)
+
+**싱글 스레드로 제한된 디스패처**
+
+- **코스 그레인드 스레드 한정(coarse-grained thread confinement)**
+    - 함수 전체를 싱글 스레드 디스패처로 래핑
+    - 여러 스레드에서 병렬로 시작된 작업에 대해 디스패처 제한을  거는 경우 함수 실행이 느려짐
+- **파인 드레인드 스레드 한정(fine-grained thread confinement)**
+    - 상태를 변경하는 구문들만 싱글 스레드 디스패처로 래핑
+    - 번거롭지만 크리티컬 섹션이 아닌 부분이 블로킹 되거나 CPU 집약적인 경우에 더 나은 성능을 제공
+    - 일반적인 중단 함수는 큰 성능 차이 없음
+
+**뮤텍스**
+
+- kotlinx.coroutines에서 제공하는 interface
+- OS에서의 뮤텍스와 동일한 개념
+- 스레드 대신 코루틴을 블락함
+- 뮤텍스 내부에서 뮤텍스를 사용할 경우 교착 상태에 빠지게 됨
+    - 따라서 뮤텍스를 활용할 때는 코스 그레인드 방식을 지양해야 함
+
+**세마포어**
+
+- kotlinx.coroutines에서 제공하는 interface
+- OS에서의 세마포어와 동일한 개념
+- 동시 요청의 처리 수를 제한할 때 활용
 
 ## 15장 코틀린 코루틴 테스트하기
