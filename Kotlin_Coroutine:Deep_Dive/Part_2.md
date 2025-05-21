@@ -711,7 +711,7 @@ suspend fun massiveRun(action: suspend () -> Unit) =
 - **코스 그레인드 스레드 한정(coarse-grained thread confinement)**
     - 함수 전체를 싱글 스레드 디스패처로 래핑
     - 여러 스레드에서 병렬로 시작된 작업에 대해 디스패처 제한을  거는 경우 함수 실행이 느려짐
-- **파인 드레인드 스레드 한정(fine-grained thread confinement)**
+- **파인 그레인드 스레드 한정(fine-grained thread confinement)**
     - 상태를 변경하는 구문들만 싱글 스레드 디스패처로 래핑
     - 번거롭지만 크리티컬 섹션이 아닌 부분이 블로킹 되거나 CPU 집약적인 경우에 더 나은 성능을 제공
     - 일반적인 중단 함수는 큰 성능 차이 없음
