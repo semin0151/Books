@@ -528,9 +528,9 @@ transform으로 반환된 값을 통해 매핑 기능
 
 ```kotlin
 public inline fun <T, R> Flow<T>.map(
-		crossinline transform: suspend (value: T) -> R
+	crossinline transform: suspend (value: T) -> R
 ): Flow<R> = transform { value ->
-	  return@transform emit(transform(value))
+	return@transform emit(transform(value))
 }
 ```
 
@@ -840,7 +840,5 @@ public fun <T> Flow<T>.stateIn(
     return ReadonlyStateFlow(state, job)
 }
 ```
-
-## 25장 플로우 테스트하기
 
 ## 25장 플로우 테스트하기
