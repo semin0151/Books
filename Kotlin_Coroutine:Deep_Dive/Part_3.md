@@ -540,7 +540,7 @@ predicate 조건이 참인 값만 emit
 
 ```kotlin
 public inline fun <T> Flow<T>.filter(
-		crossinline predicate: suspend (T) -> Boolean
+	crossinline predicate: suspend (T) -> Boolean
 ): Flow<T> = transform { value ->
     if (predicate(value)) return@transform emit(value)
 }
@@ -596,7 +596,7 @@ flow를 합치는 역할. 같은 타입일 경우에만 사용
 
 ```kotlin
 public fun <T> merge(vararg flows: Flow<T>): Flow<T> 
-		= flows.asIterable().merge()
+	= flows.asIterable().merge()
 ```
 
 ### zip
@@ -605,8 +605,8 @@ flow를 합치는 역할. 여러개의 flow에서 값이 하나씩 반환 될 �
 
 ```kotlin
 public fun <T1, T2, R> Flow<T1>.zip(
-		other: Flow<T2>, 
-		transform: suspend (T1, T2) -> R
+	other: Flow<T2>, 
+	transform: suspend (T1, T2) -> R
 ): Flow<R> = zipImpl(this, other, transform)
 ```
 
@@ -617,8 +617,8 @@ flow를 합치는 역할. 각 flow에서 원소가 반환될 때마다 값을 �
 ```kotlin
 @JvmName("flowCombine")
 public fun <T1, T2, R> Flow<T1>.combine(
-		flow: Flow<T2>, 
-		transform: suspend (a: T1, b: T2) -> R
+	flow: Flow<T2>, 
+	transform: suspend (a: T1, b: T2) -> R
 ): Flow<R> = flow {
     combineInternal(arrayOf(this@combine, flow), nullArrayFactory(), { emit(transform(it[0] as T1, it[1] as T2)) })
 }
@@ -647,8 +647,8 @@ scan은 누적되는 과정의 모든 값을 생성하는 중간 연산이다.
 
 ```kotlin
 public fun <T, R> Flow<T>.scan(
-		initial: R, 
-		@BuilderInference operation: suspend (accumulator: R, value: T) -> R
+	initial: R, 
+	@BuilderInference operation: suspend (accumulator: R, value: T) -> R
 ): Flow<R> = runningFold(initial, operation)
 ```
 
@@ -659,7 +659,7 @@ flow를 평탄화 하는 역할. 생성된 플로우를 하나씩 처리.
 ```kotlin
 @ExperimentalCoroutinesApi
 public fun <T, R> Flow<T>.flatMapConcat(
-		transform: suspend (value: T) -> Flow<R>
+	transform: suspend (value: T) -> Flow<R>
 ): Flow<R> = map(transform).flattenConcat()
 ```
 
@@ -672,8 +672,8 @@ concurrency 인자를 사용해 동시에 처리할 수 있는 플로우의 수�
 ```kotlin
 @ExperimentalCoroutinesApi
 public fun <T, R> Flow<T>.flatMapMerge(
-    concurrency: Int = DEFAULT_CONCURRENCY,
-    transform: suspend (value: T) -> Flow<R>
+    	concurrency: Int = DEFAULT_CONCURRENCY,
+    	transform: suspend (value: T) -> Flow<R>
 ): Flow<R> =
     map(transform).flattenMerge(concurrency)
 ```
@@ -685,7 +685,7 @@ flow를 평탄화 하는 역할. 새로운 플로우가 나타나면 이전에 �
 ```kotlin
 @ExperimentalCoroutinesApi
 public inline fun <T, R> Flow<T>.flatMapLatest(
-		@BuilderInference crossinline transform: suspend (value: T) -> Flow<R>
+	@BuilderInference crossinline transform: suspend (value: T) -> Flow<R>
 ): Flow<R> = transformLatest { emitAll(transform(it)) }
 ```
 
@@ -695,8 +695,8 @@ public inline fun <T, R> Flow<T>.flatMapLatest(
 
 ```kotlin
 public fun <T> Flow<T>.retry(
-    retries: Long = Long.MAX_VALUE,
-    predicate: suspend (cause: Throwable) -> Boolean = { true }
+	retries: Long = Long.MAX_VALUE,
+    	predicate: suspend (cause: Throwable) -> Boolean = { true }
 ): Flow<T> {
     require(retries > 0) { "Expected positive amount of retries, but had $retries" }
     return retryWhen { cause, attempt -> attempt < retries && predicate(cause) }
