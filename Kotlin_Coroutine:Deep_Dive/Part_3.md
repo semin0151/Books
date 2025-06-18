@@ -698,8 +698,8 @@ public fun <T> Flow<T>.retry(
 	retries: Long = Long.MAX_VALUE,
     	predicate: suspend (cause: Throwable) -> Boolean = { true }
 ): Flow<T> {
-    require(retries > 0) { "Expected positive amount of retries, but had $retries" }
-    return retryWhen { cause, attempt -> attempt < retries && predicate(cause) }
+    	require(retries > 0) { "Expected positive amount of retries, but had $retries" }
+    	return retryWhen { cause, attempt -> attempt < retries && predicate(cause) }
 }
 
 public fun <T> Flow<T>.retryWhen(predicate: suspend FlowCollector<T>.(cause: Throwable, attempt: Long) -> Boolean): Flow<T> =
@@ -733,7 +733,7 @@ public fun <T> Flow<T>.distinctUntilChanged(): Flow<T> =
     }
     
 public fun <T, K> Flow<T>.distinctUntilChangedBy(keySelector: (T) -> K): Flow<T> =
-    distinctUntilChangedBy(keySelector = keySelector, areEquivalent = defaultAreEquivalent)
+    	distinctUntilChangedBy(keySelector = keySelector, areEquivalent = defaultAreEquivalent)
 
 ```
 
@@ -755,21 +755,21 @@ public fun <T, K> Flow<T>.distinctUntilChangedBy(keySelector: (T) -> K): Flow<T>
 ```kotlin
 public interface SharedFlow<out T> : Flow<T> {
 
-    public val replayCache: List<T>
+    	public val replayCache: List<T>
 
-    override suspend fun collect(collector: FlowCollector<T>): Nothing
+	override suspend fun collect(collector: FlowCollector<T>): Nothing
 }
 
 public interface MutableSharedFlow<T> : SharedFlow<T>, FlowCollector<T> {
 	   
-    override suspend fun emit(value: T)
+    	override suspend fun emit(value: T)
 
-    public fun tryEmit(value: T): Boolean
+    	public fun tryEmit(value: T): Boolean
 
-    public val subscriptionCount: StateFlow<Int>
+    	public val subscriptionCount: StateFlow<Int>
 
-    @ExperimentalCoroutinesApi
-    public fun resetReplayCache()
+    	@ExperimentalCoroutinesApi
+    	public fun resetReplayCache()
 }
 ```
 
@@ -779,19 +779,19 @@ ColdStream인 `Flow`를 HotStream인 `SharedFlow`로 변환한다.
 
 ```kotlin
 public fun <T> Flow<T>.shareIn(
-    scope: CoroutineScope,
-    started: SharingStarted,
-    replay: Int = 0
+    	scope: CoroutineScope,
+    	started: SharingStarted,
+    	replay: Int = 0
 ): SharedFlow<T> {
-    val config = configureSharing(replay)
-    val shared = MutableSharedFlow<T>(
-        replay = replay,
-        extraBufferCapacity = config.extraBufferCapacity,
-        onBufferOverflow = config.onBufferOverflow
-    )
-    @Suppress("UNCHECKED_CAST")
-    val job = scope.launchSharing(config.context, config.upstream, shared, started, NO_VALUE as T)
-    return ReadonlySharedFlow(shared, job)
+    	val config = configureSharing(replay)
+    	val shared = MutableSharedFlow<T>(
+        	replay = replay,
+        	extraBufferCapacity = config.extraBufferCapacity,
+        	onBufferOverflow = config.onBufferOverflow
+    	)
+    	@Suppress("UNCHECKED_CAST")
+    	val job = scope.launchSharing(config.context, config.upstream, shared, started, NO_VALUE as T)
+    	return ReadonlySharedFlow(shared, job)
 }
 ```
 
@@ -808,14 +808,14 @@ public fun <T> Flow<T>.shareIn(
 ```kotlin
 public interface StateFlow<out T> : SharedFlow<T> {
 
-    public val value: T
+    	public val value: T
 }
 
 public interface MutableStateFlow<T> : StateFlow<T>, MutableSharedFlow<T> {
 
-    public override var value: T
+    	public override var value: T
 
-    public fun compareAndSet(expect: T, update: T): Boolean
+    	public fun compareAndSet(expect: T, update: T): Boolean
 }
 ```
 
@@ -830,14 +830,14 @@ Android에서는 LiveData의 대체제로 활용됨. 아래 이유 때문
 
 ```kotlin
 public fun <T> Flow<T>.stateIn(
-    scope: CoroutineScope,
-    started: SharingStarted,
-    initialValue: T
+    	scope: CoroutineScope,
+    	started: SharingStarted,
+    	initialValue: T
 ): StateFlow<T> {
-    val config = configureSharing(1)
-    val state = MutableStateFlow(initialValue)
-    val job = scope.launchSharing(config.context, config.upstream, state, started, initialValue)
-    return ReadonlyStateFlow(state, job)
+	val config = configureSharing(1)
+	val state = MutableStateFlow(initialValue)
+	val job = scope.launchSharing(config.context, config.upstream, state, started, initialValue)
+	return ReadonlyStateFlow(state, job)
 }
 ```
 
